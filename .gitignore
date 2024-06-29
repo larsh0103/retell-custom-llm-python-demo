@@ -161,3 +161,6 @@ cython_debug/
 .env_internal
 
 .env2
+
+*.env
+.env-2

@@ -12,7 +12,7 @@ from .custom_types import (
     ConfigResponse,
     ResponseRequiredRequest,
 )
-from .twilio_server import TwilioClient
+# from .twilio_server import TwilioClient
 from .llm import LlmClient  # or use .llm_with_func_calling
 
 load_dotenv(override=True)
@@ -20,7 +20,7 @@ app = FastAPI()
 retell = Retell(api_key=os.environ["RETELL_API_KEY"])
 
 # Custom Twilio if you want to use your own Twilio API Key
-twilio_client = TwilioClient()
+# twilio_client = TwilioClient()
 # twilio_client.create_phone_number(213, "68978b1c2935ff9c7d7107e61524d0bb")
 # twilio_client.delete_phone_number("+12133548310")
 # twilio_client.register_inbound_agent("+13392016322", "68978b1c2935ff9c7d7107e61524d0bb")
