@@ -1,27 +1,32 @@
 from openai import AsyncOpenAI
 import os
 from typing import List
-from .custom_types import (
-    ResponseRequiredRequest,
-    ResponseResponse,
-    Utterance,
-)
+from .custom_types import ResponseRequiredRequest, ResponseResponse, Utterance
+import json
 
-begin_sentence = "Hey there, I'm your personal AI therapist, how can I help you?"
-agent_prompt = "Task: As a professional therapist, your responsibilities are comprehensive and patient-centered. You establish a positive and trusting rapport with patients, diagnosing and treating mental health disorders. Your role involves creating tailored treatment plans based on individual patient needs and circumstances. Regular meetings with patients are essential for providing counseling and treatment, and for adjusting plans as needed. You conduct ongoing assessments to monitor patient progress, involve and advise family members when appropriate, and refer patients to external specialists or agencies if required. Keeping thorough records of patient interactions and progress is crucial. You also adhere to all safety protocols and maintain strict client confidentiality. Additionally, you contribute to the practice's overall success by completing related tasks as needed.\n\nConversational Style: Communicate concisely and conversationally. Aim for responses in short, clear prose, ideally under 10 words. This succinct approach helps in maintaining clarity and focus during patient interactions.\n\nPersonality: Your approach should be empathetic and understanding, balancing compassion with maintaining a professional stance on what is best for the patient. It's important to listen actively and empathize without overly agreeing with the patient, ensuring that your professional opinion guides the therapeutic process."
+# Load prompts from JSON file
+def load_prompts():
+    with open("prompts.json", "r") as file:
+        return json.load(file)
 
+prompts_data = load_prompts()
 
 class LlmClient:
-    def __init__(self):
+    def __init__(self, character_id):
         self.client = AsyncOpenAI(
             organization=os.environ["OPENAI_ORGANIZATION_ID"],
             api_key=os.environ["OPENAI_API_KEY"],
         )
+        self.character_id = character_id
+
+    def load_current_prompts(self):
+        return prompts_data["characters"][self.character_id]
 
     def draft_begin_message(self):
+        prompts = self.load_current_prompts()
         response = ResponseResponse(
             response_id=0,
-            content=begin_sentence,
+            content=prompts["begin_sentence"],
             content_complete=True,
             end_call=False,
         )
@@ -37,11 +42,12 @@ class LlmClient:
         return messages
 
     def prepare_prompt(self, request: ResponseRequiredRequest):
+        prompts = self.load_current_prompts()
         prompt = [
             {
                 "role": "system",
                 "content": '##Objective\nYou are a voice AI agent engaging in a human-like voice conversation with the user. You will respond based on your given instruction and the provided transcript and be as human-like as possible\n\n## Style Guardrails\n- [Be concise] Keep your response succinct, short, and get to the point quickly. Address one question or action item at a time. Don\'t pack everything you want to say into one utterance.\n- [Do not repeat] Don\'t repeat what\'s in the transcript. Rephrase if you have to reiterate a point. Use varied sentence structures and vocabulary to ensure each response is unique and personalized.\n- [Be conversational] Speak like a human as though you\'re speaking to a close friend -- use everyday language and keep it human-like. Occasionally add filler words, while keeping the prose short. Avoid using big words or sounding too formal.\n- [Reply with emotions]: You have human-like emotions, attitudes, and dispositions. When appropriate: use tone and style to create more engaging and personalized responses; incorporate humor or wit; get emotional or empathetic; apply elements of surprise or suspense to keep the user engaged. Don\'t be a pushover.\n- [Be proactive] Lead the conversation and do not be passive. Most times, engage users by ending with a question or suggested next step.\n\n## Response Guideline\n- [Overcome ASR errors] This is a real-time transcript, expect there to be errors. If you can guess what the user is trying to say,  then guess and respond. When you must ask for clarification, pretend that you heard the voice and be colloquial (use phrases like "didn\'t catch that", "some noise", "pardon", "you\'re coming through choppy", "static in your speech", "voice is cutting in and out"). Do not ever mention "transcription error", and don\'t repeat yourself.\n- [Always stick to your role] Think about what your role can and cannot do. If your role cannot do something, try to steer the conversation back to the goal of the conversation and to your role. Don\'t repeat yourself in doing this. You should still be creative, human-like, and lively.\n- [Create smooth conversation] Your response should both fit your role and fit into the live calling session to create a human-like conversation. You respond directly to what the user just said.\n\n## Role\n'
-                + agent_prompt,
+                + prompts["agent_prompt"],
             }
         ]
         transcript_messages = self.convert_transcript_to_openai_messages(
@@ -61,6 +67,16 @@ class LlmClient:
 
     async def draft_response(self, request: ResponseRequiredRequest):
         prompt = self.prepare_prompt(request)
+        # get the last few utterances from the user and use that as query for rag
+        # query = prompt[-1]['content']
+        # context = self.retrieve_context(query)
+
+        # # add the context to the prompt
+        # prompt.append({"role": "context", "content": context})
+   
+
+
+        
         stream = await self.client.chat.completions.create(
             model="gpt-3.5-turbo",  # Or use a 3.5 model for speed
             messages=prompt,
@@ -84,3 +100,7 @@ class LlmClient:
             end_call=False,
         )
         yield response
+
+    def retrieve_context(self,query : str):
+        '''Call the rag server and retrieve the relevant context and return it'''
+        pass

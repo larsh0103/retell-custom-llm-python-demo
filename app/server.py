@@ -8,24 +8,22 @@ from concurrent.futures import TimeoutError as ConnectionTimeoutError
 from twilio.twiml.voice_response import VoiceResponse
 from retell import Retell
 from retell.resources.call import RegisterCallResponse
-from .custom_types import (
-    ConfigResponse,
-    ResponseRequiredRequest,
-)
-# from .twilio_server import TwilioClient
-from .llm import LlmClient  # or use .llm_with_func_calling
+from .custom_types import ConfigResponse, ResponseRequiredRequest
+from .llm import LlmClient  # Import the LlmClient class
 
 load_dotenv(override=True)
 app = FastAPI()
 retell = Retell(api_key=os.environ["RETELL_API_KEY"])
 
-# Custom Twilio if you want to use your own Twilio API Key
-# twilio_client = TwilioClient()
-# twilio_client.create_phone_number(213, "68978b1c2935ff9c7d7107e61524d0bb")
-# twilio_client.delete_phone_number("+12133548310")
-# twilio_client.register_inbound_agent("+13392016322", "68978b1c2935ff9c7d7107e61524d0bb")
-# twilio_client.create_phone_call("+13392016322", "+14157122917", "68978b1c2935ff9c7d7107e61524d0bb")
+# Load prompts from JSON file
+def load_prompts():
+    with open("prompts.json", "r") as file:
+        return json.load(file)
 
+prompts_data = load_prompts()
+
+# Global variable to store the current character ID
+current_character_id = "julius_caesar"
 
 # Handle webhook from Retell server. This is used to receive events from Retell server.
 # Including call_started, call_ended, call_analyzed
@@ -59,7 +57,6 @@ async def handle_webhook(request: Request):
         return JSONResponse(
             status_code=500, content={"message": "Internal Server Error"}
         )
-
 
 # Twilio voice webhook. This will be called whenever there is an incoming or outgoing call.
 # Register call with Retell at this stage and pass in returned call_id to Retell.
@@ -99,7 +96,6 @@ async def handle_twilio_voice_webhook(request: Request, agent_id_path: str):
             status_code=500, content={"message": "Internal Server Error"}
         )
 
-
 # Only used for web call frontend to register call so that frontend don't need api key.
 # If you are using Retell through phone call, you don't need this API. Because
 # this.twilioClient.ListenTwilioVoiceWebhook() will include register-call in its function.
@@ -122,15 +118,15 @@ async def handle_register_call(request: Request):
             status_code=500, content={"message": "Internal Server Error"}
         )
 
-
 # Start a websocket server to exchange text input and output with Retell server. Retell server
 # will send over transcriptions and other information. This server here will be responsible for
 # generating responses with LLM and send back to Retell server.
 @app.websocket("/llm-websocket/{call_id}")
 async def websocket_handler(websocket: WebSocket, call_id: str):
+    global current_character_id  # Ensure the global variable is used here
     try:
         await websocket.accept()
-        llm_client = LlmClient()
+        llm_client = LlmClient(current_character_id)  # Pass the current character ID
 
         # Send optional config to Retell server
         config = ConfigResponse(
@@ -197,3 +193,13 @@ async def websocket_handler(websocket: WebSocket, call_id: str):
         await websocket.close(1011, "Server error")
     finally:
         print(f"LLM WebSocket connection closed for {call_id}")
+
+# New endpoint to change the character prompt
+@app.post("/change-character/{character_id}")
+async def change_character(character_id: str):
+    global current_character_id
+    if character_id in prompts_data["characters"]:
+        current_character_id = character_id
+        return JSONResponse(status_code=200, content={"message": f"Character changed to {character_id}"})
+    else:
+        return JSONResponse(status_code=404, content={"message": "Character not found"})
