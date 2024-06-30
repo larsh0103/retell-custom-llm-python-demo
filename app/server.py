@@ -2,7 +2,7 @@ import json
 import os
 import asyncio
 from dotenv import load_dotenv
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, Query
 from fastapi.responses import JSONResponse, PlainTextResponse
 from concurrent.futures import TimeoutError as ConnectionTimeoutError
 from twilio.twiml.voice_response import VoiceResponse
@@ -13,6 +13,17 @@ from .llm import LlmClient  # Import the LlmClient class
 
 load_dotenv(override=True)
 app = FastAPI()
+
+# Allow CORS
+from fastapi.middleware.cors import CORSMiddleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 retell = Retell(api_key=os.environ["RETELL_API_KEY"])
 
 # Load prompts from JSON file
@@ -22,11 +33,11 @@ def load_prompts():
 
 prompts_data = load_prompts()
 
-# Global variable to store the current character ID
+# Global variables to store the current character ID and context
 current_character_id = "julius_caesar"
+current_context = ""
 
 # Handle webhook from Retell server. This is used to receive events from Retell server.
-# Including call_started, call_ended, call_analyzed
 @app.post("/webhook")
 async def handle_webhook(request: Request):
     try:
@@ -59,7 +70,6 @@ async def handle_webhook(request: Request):
         )
 
 # Twilio voice webhook. This will be called whenever there is an incoming or outgoing call.
-# Register call with Retell at this stage and pass in returned call_id to Retell.
 @app.post("/twilio-voice-webhook/{agent_id_path}")
 async def handle_twilio_voice_webhook(request: Request, agent_id_path: str):
     try:
@@ -96,9 +106,7 @@ async def handle_twilio_voice_webhook(request: Request, agent_id_path: str):
             status_code=500, content={"message": "Internal Server Error"}
         )
 
-# Only used for web call frontend to register call so that frontend don't need api key.
-# If you are using Retell through phone call, you don't need this API. Because
-# this.twilioClient.ListenTwilioVoiceWebhook() will include register-call in its function.
+# Only used for web call frontend to register call so that frontend doesn't need API key.
 @app.post("/register-call-on-your-server")
 async def handle_register_call(request: Request):
     try:
@@ -124,9 +132,10 @@ async def handle_register_call(request: Request):
 @app.websocket("/llm-websocket/{call_id}")
 async def websocket_handler(websocket: WebSocket, call_id: str):
     global current_character_id  # Ensure the global variable is used here
+    global current_context  # Ensure the global variable is used here
     try:
         await websocket.accept()
-        llm_client = LlmClient(current_character_id)  # Pass the current character ID
+        llm_client = LlmClient(current_character_id, current_context)  # Pass the current character ID and context
 
         # Send optional config to Retell server
         config = ConfigResponse(
@@ -147,8 +156,6 @@ async def websocket_handler(websocket: WebSocket, call_id: str):
         async def handle_message(request_json):
             nonlocal response_id
 
-            # There are 5 types of interaction_type: call_details, pingpong, update_only, response_required, and reminder_required.
-            # Not all of them need to be handled, only response_required and reminder_required.
             if request_json["interaction_type"] == "call_details":
                 print(json.dumps(request_json, indent=2))
                 return
@@ -196,10 +203,14 @@ async def websocket_handler(websocket: WebSocket, call_id: str):
 
 # New endpoint to change the character prompt
 @app.post("/change-character/{character_id}")
-async def change_character(character_id: str):
+async def change_character(character_id: str, topic: str = Query(None)):
     global current_character_id
+    global current_context
     if character_id in prompts_data["characters"]:
         current_character_id = character_id
+        if topic:
+            llm_client = LlmClient(character_id)
+            current_context = await llm_client.retrieve_context(topic)
         return JSONResponse(status_code=200, content={"message": f"Character changed to {character_id}"})
     else:
         return JSONResponse(status_code=404, content={"message": "Character not found"})
