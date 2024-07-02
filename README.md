@@ -14,8 +14,12 @@ We have a vector database that is public here - (url)
 If you want to create your own, follow the steps below: 
 
 ## Create Your Own Vector Database
-1. Generate structured .json data by running the script with a .pdf argument, for example: 
-`UNSTRUCTURED_API_KEY=<YOUR_API_KEY> python3 unstructured.py data/caesar-and-cleopatra.pdf`. Do this multiple times if you want to add multiple data sources. 
+1. Generate structured .json data by running the script with a .pdf argument, for example:
+```
+UNSTRUCTURED_API_KEY=<YOUR_API_KEY> python3 unstructured/main.py <PDF FILE>
+```
+
+You can run this multiple times if you want to structure multiple files. 
 
 2. Create a [Datastax account](https://accounts.datastax.com/session-service/v1/login) and create an AstraDB in the dashboard. 
 
