@@ -22,7 +22,7 @@ def perform_query(request: QueryRequest):
     try:
         client = DataAPIClient(os.environ["ASTRA_TOKEN"])
         database = client.get_database(os.environ["ASTRA_ENDPOINT"])
-        caesar = database["caesar2"]
+        caesar = database["caesar"]
         
         results = caesar.find(
             sort={"$vectorize": request.query},

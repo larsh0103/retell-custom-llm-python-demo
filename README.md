@@ -1,6 +1,6 @@
 # retell-custom-llm-python-demo
 
-This is a sample demo repo to show how to have your own LLM plugged into Retell.
+(This is a sample demo repo to show how to have your own LLM plugged into Retell.)
 
 This repo currently uses `OpenAI` endpoint. Feel free to contribute to make
 this demo more realistic.
@@ -9,11 +9,24 @@ This repos is intended to be used together with Simli Avatar API - found here "[
 
 It also uses unstructured to process unstructered data and feed it into Datastax rag database, which in turn is what is used to ensure that the interactions with historical characters are grounded in truth. 
 
-We have a database that is public here - (url) 
+We have a vector database that is public here - (url) 
 
-If you want to create your own please follow the docs on datastax and unstrucutered to ingest more historical context and books.
+If you want to create your own, follow the steps below: 
 
-## Steps to run in localhost
+## Create Your Own Vector Database
+1. Generate structured .json data by running the script with a .pdf argument, for example: 
+`UNSTRUCTURED_API_KEY=<YOUR_API_KEY> python3 unstructured.py data/caesar-and-cleopatra.pdf`. Do this multiple times if you want to add multiple data sources. 
+
+2. Create a [Datastax account](https://accounts.datastax.com/session-service/v1/login) and create an AstraDB in the dashboard. 
+
+3. Under "Integrations" on the left hand menu, enable OpenAI as embedding provider
+
+4. Create a collection in your AstraDB called "caesar", for example.
+
+5. Choose OpenAI as the embedding generation method
+
+6. Upload the json files that you created in Step 1. 
+## Steps to run custom LLM Websocket Server
 
 1. First install dependencies
 
