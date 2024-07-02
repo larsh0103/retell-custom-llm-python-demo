@@ -5,16 +5,14 @@
 This repo currently uses `OpenAI` endpoint. Feel free to contribute to make
 this demo more realistic.
 
-This repos is intended to be used together with Simli Avatar API - found here "[Link](https://github.com/simliai/simli-retell-frontend-reactjs-demo/tree/historicalCharacters)". 
+This repos is intended to be used together with Simli Avatar API - found here [Link](https://github.com/simliai/simli-retell-frontend-reactjs-demo/tree/historicalCharacters). 
 
-It also uses unstructured to process unstructered data and feed it into Datastax rag database, which in turn is what is used to ensure that the interactions with historical characters are grounded in truth. 
+It also uses [unstructured.io](https://unstructured.io/) to process unstructered data and feed it into [Datastax astradb vector database](https://www.datastax.com/), which in turn is what is used to ensure that the interactions with historical characters are grounded in truth and historical context. 
 
-We have a vector database that is public here - (url) 
-
-If you want to create your own, follow the steps below: 
 
 ## Create Your Own Vector Database
 1. Generate structured .json data by running the script with a .pdf argument, for example:
+One example of a historical source we used in this project is [this book about julius Caesar](https://dn790003.ca.archive.org/0/items/historyofjuliusc01napoiala/historyofjuliusc01napoiala.pdf)
 ```
 UNSTRUCTURED_API_KEY=<YOUR_API_KEY> python3 unstructured/main.py <PDF FILE>
 ```
