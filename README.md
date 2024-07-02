@@ -70,7 +70,7 @@ The custom LLM URL would look like
 
 ```python main.py```
 
-Note: the queryer code requires two environment variables set: ASTRA_TOKEN and ASTRA_ENDPOINT both which you can find in the AstraDB dashboard or use ours above if you are using our pubic vector database. 
+Note that the queryer code requires two environment variables set: ASTRA_TOKEN and ASTRA_ENDPOINT. You can set custom ones from your AstraDB dashboard or use ours above if you are using our public vector database. 
 
 This will start a fastapi that interfaces with datastax astradb, which is where we get the rag data to enrich the agent interactions.
 
