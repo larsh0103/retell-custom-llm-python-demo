@@ -9,7 +9,7 @@ This repos is intended to be used together with Simli Avatar API - found here "[
 
 It also uses unstructured to process unstructered data and feed it into Datastax rag database, which in turn is what is used to ensure that the interactions with historical characters are grounded in truth. 
 
-We have a vector database that is public here - (url) 
+We have a vector database that is public: `https://3cb6dbc5-f10f-43ba-9f2d-7af047ef7523-us-east1.apps.astra.datastax.com` that you can connect to by setting the ASTRA_ENDPOINT environment variable to that and ASTRA_TOKEN to our read-only token: `AstraCS:SxlTXLOHmGZawqimghkMDaeK:5c6cbc041fb72579587e5d933982704e728b9535148a250f9ce20c7518442d09` 
 
 If you want to create your own, follow the steps below: 
 
@@ -31,6 +31,7 @@ You can run this multiple times if you want to structure multiple files.
 
 6. Upload the json files that you created in Step 1. 
 ## Steps to run custom LLM Websocket Server
+
 
 1. First install dependencies
 
@@ -65,7 +66,10 @@ The custom LLM URL would look like
 5. Run Rag database queryer api:
 
 ```cd queryer```
+
 ```python main.py```
+
+Note: the queryer code requires two environment variables set: ASTRA_TOKEN and ASTRA_ENDPOINT both which you can find in the AstraDB dashboard or use ours above if you are using our pubic vector database. 
 
 This will start a fastapi that interfaces with datastax astradb, which is where we get the rag data to enrich the agent interactions.
 
