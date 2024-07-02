@@ -45,6 +45,14 @@ The custom LLM URL would look like
 `wss://dc14-2601-645-c57f-8670-9986-5662-2c9a-adbd.ngrok-free.app/llm-websocket`
 
 
+5. Run Rag database queryer api:
+
+```cd queryer```
+```python main.py```
+
+This will start a fastapi that interfaces with datastax astradb, which is where we get the rag data to enrich the agent interactions.
+
+
 ## Run in prod
 
 To run in prod, you probably want to customize your LLM solution, host the code
